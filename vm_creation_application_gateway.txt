@@ -1,0 +1,33 @@
+$cr = Get-Credential 
+for($i = 1; $i -lt 4; $i++)
+{
+$mynic = New-AzNetworkInterface -name MyNIC$i -ResourceGroupName $rgname -Location $loc -ApplicationGatewayBackendAddressPool $Pool -Subnet $sub2
+$vm = New-AzVMConfig -VMName VM-00$i -VMSize Standard_DS1_v2 
+
+            Set-AzVMSourceImage -VM $vm -PublisherName MicrosoftWindowsServer -Offer windowsserver -Skus 2016-Datacenter -Version latest
+
+            Set-AzVMOperatingSystem -vm $vm -Windows -ComputerName VM-00$i -Credential $cr 
+
+            Add-AzVMNetworkInterface -vm $vm -NetworkInterface $mynic
+
+            Set-AzVMBootDiagnostic -VM $vm -Disable 
+
+
+#creation
+new-azvm -ResourceGroupName $rgname -Location $loc -vm $vm 
+
+#Creation of VirtualMachine with reference of $vm variablle
+
+
+
+
+#updation of the iis webserver html webpage
+Set-AzVMExtension -ResourceGroupName $rgname `
+                  -Location $loc `
+                   -Publisher Microsoft.compute `
+                   -VMName VM-00$i `
+                   -ExtensionName IIS `
+                   -ExtensionType CustomScriptExtension `
+                   -TypeHandlerVersion "1.4"  `
+                   -SettingString '{"commandToExecute":"powershell Add-WindowsFeature Web-Server; powershell Add-Content -Path \"C:\\inetpub\\wwwroot\\Default.htm\" -Value $($env:computername)"}'
+}
